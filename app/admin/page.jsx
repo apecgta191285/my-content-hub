@@ -1,6 +1,8 @@
 import LogoutButton from './LogoutButton';
 import CreatePostForm from './CreatePostForm'; // Import ฟอร์มที่เราเพิ่งสร้าง
 import { createSupabaseServerClient } from '../../lib/supabase/server'; // Import "ตัวเชื่อมต่อ Server"
+import DeletePostButton from './DeletePostButton';
+import Link from 'next/link';
 
 // "ไม้เด็ด": เปลี่ยนฟังก์ชันนี้ให้เป็น "async"
 // เพื่อให้มัน "รอ" (await) ข้อมูลจากฐานข้อมูลก่อน
@@ -64,6 +66,15 @@ export default async function AdminDashboard() {
                     {/* แปลงเวลาให้สวยงาม */}
                     {new Date(post.created_at).toLocaleString()} 
                   </p>
+                  <div className="flex items-center gap-4 mt-4">
+                    <Link
+                      href={`/admin/edit/${post.id}`} // <--- ลิงก์ไปหน้า Edit
+                      className="px-3 py-1 text-xs font-medium text-white bg-yellow-500 rounded-md hover:bg-yellow-600"
+                    >
+                      แก้ไข
+                    </Link>
+                    <DeletePostButton postId={post.id} /> {/* <--- แปะปุ่มลบ */}
+                  </div>
                 </div>
               ))
             ) : (
