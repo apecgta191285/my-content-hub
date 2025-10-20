@@ -10,6 +10,7 @@ export default function CreatePostForm() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [imageUrl, setImageUrl] = useState(''); // (Optional) สำหรับ URL รูปภาพ
+  const [isPublished, setIsPublished] = useState(false); 
   const [message, setMessage] = useState('');
 
   const router = useRouter();
@@ -25,7 +26,7 @@ export default function CreatePostForm() {
     // เพราะเราตั้ง Default Value ของ user_id เป็น auth.uid()
     const { error } = await supabase
       .from('posts') // ไปที่ตาราง 'posts'
-      .insert({ title, content, image_url: imageUrl || null }); // "เพิ่ม" ข้อมูลนี้
+      .insert({ title, content, image_url: imageUrl || null, is_published: isPublished }); // "เพิ่ม" ข้อมูลนี้
 
     if (error) {
       setMessage(`เกิดข้อผิดพลาด: ${error.message}`);
@@ -34,6 +35,7 @@ export default function CreatePostForm() {
       // เคลียร์ฟอร์ม
       setTitle('');
       setContent('');
+      setIsPublished(false);
       setImageUrl('');
       // สั่งให้หน้าเว็บ "รีเฟรช" (เพื่อดึงรายการบทความใหม่)
       router.refresh(); 
@@ -90,6 +92,19 @@ export default function CreatePostForm() {
           className="w-full px-3 py-2 mt-1 text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
         />
       </div>
+
+      {/* ช่องติ๊กถูก "เผยแพร่" */}
+        <div className="mb-4">
+        <label className="flex items-center text-sm font-medium text-gray-700">
+            <input
+            type="checkbox"
+            checked={isPublished}
+            onChange={(e) => setIsPublished(e.target.checked)}
+            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <span className="ml-2">เผยแพร่บทความนี้ (Publish)</span>
+        </label>
+        </div>
 
       {/* ปุ่ม Submit */}
       <button
