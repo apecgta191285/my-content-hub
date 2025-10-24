@@ -15,30 +15,48 @@ export default function EditPostForm({ postData }) {
   const [imageUrl, setImageUrl] = useState(postData.image_url || '');
   const [isPublished, setIsPublished] = useState(postData.is_published);
   const [message, setMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMessage('กำลังอัปเดต...');
+// ฟังก์ชัน handleSubmit เวอร์ชันอัปเกรด (มี try...catch...finally)
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setIsLoading(true); // <--- 1. "เปิด" Loading
+  setMessage('กำลังอัปเดต...');
 
-    // "ไม้เด็ด" (U - Update)
+  try {
+    // 2. "ลอง" ทำงาน (Update)
     const { error } = await supabase
       .from('posts')
-      .update({ // คำสั่ง "อัปเดต"
+      .update({
         title: title,
         content: content,
         image_url: imageUrl || null,
         is_published: isPublished,
       })
-      .eq('id', postData.id); // "เฉพาะ" id นี้
+      .eq('id', postData.id);
 
+    // 3. ถ้า "ล้มเหลว"
     if (error) {
-      setMessage(`เกิดข้อผิดพลาด: ${error.message}`);
-    } else {
-      setMessage('อัปเดตบทความสำเร็จ!');
-      // พาผู้ใช้กลับไปหน้า Admin Dashboard
-      router.push('/admin');
-      router.refresh(); // สั่งรีเฟรชหน้า Admin (เผื่อกลับไปแล้วข้อมูลยังไม่อัปเดต)
+      throw error; // "โยน" Error ไปให้ "catch"
     }
+
+    // 4. ถ้า "สำเร็จ"
+    setMessage('อัปเดตบทความสำเร็จ!');
+    // พาผู้ใช้กลับไปหน้า Admin
+    router.push('/admin');
+    router.refresh();
+
+  } catch (error) {
+    // 5. "จับ" Error
+    setMessage(`เกิดข้อผิดพลาด: ${error.message}`);
+    setIsLoading(false); // <--- หยุด Loading (ถ้า Error)
+
+  } 
+  // 6. "finally" (สุดท้าย)
+  // โค้ชจงใจไม่ใส่ "finally" ที่นี่ เพราะถ้า "สำเร็จ" (try)
+  // เรา "ต้องการ" ให้ปุ่มค้างสถานะ Loading ไว้
+  // ในขณะที่ `router.push` กำลังพาเราย้ายหน้าครับ
+  // เราจะหยุด Loading เฉพาะตอนที่ "ล้มเหลว" (catch) เท่านั้น
   };
 
   return (
@@ -104,12 +122,15 @@ export default function EditPostForm({ postData }) {
         </label>
       </div>
 
-      {/* ปุ่ม Submit */}
+      {/* ปุ่ม Submit*/}
       <button
         type="submit"
-        className="w-full px-4 py-2 font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
+        disabled={isLoading} // <--- 1. "ปิด" ปุ่ม ถ้า isLoading เป็น true
+        className="w-full px-4 py-2 font-medium text-white bg-green-600 rounded-md hover:bg-green-700
+                  disabled:bg-gray-400 disabled:cursor-not-allowed" // <--- 2. เพิ่ม Style ตอน "ปิด"
       >
-        บันทึกการเปลี่ยนแปลง
+        {/* 3. "เปลี่ยนข้อความ" ตามสถานะ */}
+        {isLoading ? 'กำลังอัปเดต...' : 'บันทึกการเปลี่ยนแปลง'}
       </button>
 
       {message && (

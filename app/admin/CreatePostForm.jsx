@@ -12,35 +12,46 @@ export default function CreatePostForm() {
   const [imageUrl, setImageUrl] = useState(''); // (Optional) สำหรับ URL รูปภาพ
   const [isPublished, setIsPublished] = useState(false); 
   const [message, setMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
 
   // ฟังก์ชันที่จะทำงานเมื่อกดปุ่ม "Submit"
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMessage('กำลังบันทึก...');
+// ฟังก์ชัน handleSubmit เวอร์ชันอัปเกรด
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setIsLoading(true); // <--- 1. "เปิด" Loading (ปุ่มจะถูกปิด)
+  setMessage('กำลังบันทึก...');
 
-    // "ไม้เด็ด" ที่เราวางไว้ใน Phase 1
-    // เราแค่ "insert" title, content, image_url
-    // ส่วน "user_id" ... Supabase จะใส่ให้เรา "อัตโนมัติ"
-    // เพราะเราตั้ง Default Value ของ user_id เป็น auth.uid()
+  try {
+    // 2. "ลอง" ทำงาน
     const { error } = await supabase
-      .from('posts') // ไปที่ตาราง 'posts'
-      .insert({ title, content, image_url: imageUrl || null, is_published: isPublished }); // "เพิ่ม" ข้อมูลนี้
+      .from('posts')
+      .insert({ title, content, image_url: imageUrl || null, is_published: isPublished });
 
+    // 3. ถ้า "ล้มเหลว" (เช่น เน็ตตัด)
     if (error) {
-      setMessage(`เกิดข้อผิดพลาด: ${error.message}`);
-    } else {
-      setMessage('บันทึกบทความสำเร็จ!');
-      // เคลียร์ฟอร์ม
-      setTitle('');
-      setContent('');
-      setIsPublished(false);
-      setImageUrl('');
-      // สั่งให้หน้าเว็บ "รีเฟรช" (เพื่อดึงรายการบทความใหม่)
-      router.refresh(); 
+      throw error; // "โยน" Error ไปให้ "catch" จัดการ
     }
-  };
+
+    // 4. ถ้า "สำเร็จ"
+    setMessage('บันทึกบทความสำเร็จ!');
+    // เคลียร์ฟอร์ม
+    setTitle('');
+    setContent('');
+    setImageUrl('');
+    setIsPublished(false);
+    router.refresh(); // รีเฟรชข้อมูล (เหมือนเดิม)
+
+  } catch (error) {
+    // 5. "จับ" Error (ถ้า try ล้มเหลว)
+    setMessage(`เกิดข้อผิดพลาด: ${error.message}`);
+
+  } finally {
+    // 6. "สุดท้าย" (ไม่ว่าจะ สำเร็จ หรือ ล้มเหลว)
+    setIsLoading(false); // <--- "ปิด" Loading (ปุ่มจะกลับมากดได้)
+  }
+};
 
   return (
     <form
@@ -109,9 +120,12 @@ export default function CreatePostForm() {
       {/* ปุ่ม Submit */}
       <button
         type="submit"
-        className="w-full px-4 py-2 font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        disabled={isLoading} // <--- 1. "ปิด" ปุ่ม ถ้า isLoading เป็น true
+        className="w-full px-4 py-2 font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+                  disabled:bg-gray-400 disabled:cursor-not-allowed" // <--- 2. เพิ่ม Style ตอน "ปิด"
       >
-        บันทึกบทความ
+        {/* 3. "เปลี่ยนข้อความ" ตามสถานะ */}
+        {isLoading ? 'กำลังบันทึก...' : 'บันทึกบทความ'}
       </button>
 
       {message && (
